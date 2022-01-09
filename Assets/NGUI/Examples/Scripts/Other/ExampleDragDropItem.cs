@@ -20,6 +20,7 @@ public class ExampleDragDropItem : UIDragDropItem
 
 	protected override void OnDragDropRelease (GameObject surface)
 	{
+		Debug.Log(surface.name);
 		if (surface != null)
 		{
 			ExampleDragDropSurface dds = surface.GetComponent<ExampleDragDropSurface>();
