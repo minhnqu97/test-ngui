@@ -6,41 +6,47 @@ RWTexture2D<float4> Result;
 int texResolution;
 int boardSize;
 
-RWBuffer<float> mask;
+RWBuffer<float> alpha;
+RWBuffer<int> boardIndexes;
 
 
-//[numthreads(8,8,1)]
-//void CSMain (uint3 id : SV_DispatchThreadID)
-//{
-//     TODO: insert actual code here!
-
-//    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
-//}
-
-void AddMask(RWBuffer<float> _mask, int maskSize, int x, int y)
+void AddMask(uint index, uint boardIndex)
 {
-    int startX = x - maskSize / 2;
-    int startY = y - maskSize / 2;
+    uint posX = boardIndex % boardSize;
+    uint posY = (boardIndex - posX) / boardSize;
+    uint startX = posX * 100 - 25;
+    uint startY = posY * 100 - 25;
 
-    for(int i = 0; i < maskSize; ++i)
-        for(int j = 0; j < maskSize; ++j)
+    for(int i = 0; i < 150; ++i)
+        for(int j = 0; j < 150; ++j)
         {
-            float value = Result[uint2(startX + i, startY + j)].a + _mask[i + j * maskSize];
+            float value = Result[uint2(startX + i, startY + j)].a + alpha[22500 * index + i + j * 150];
             Result[uint2(startX + i, startY + j)] = float4(1, 1, 1, value);
         }
 }
 
+void AddMask2()
+{
+    
+    uint startX =  - 25;
+    uint startY = - 25;
 
-[numthreads(1, 1, 1)]
+    for (int i = 0; i < 150; ++i)
+        for (int j = 0; j < 150; ++j)
+        {
+            float value = Result[uint2(startX + i, startY + j)].a + alpha[i + j * 150];
+            Result[uint2(startX + i, startY + j)] = float4(1, 1, 1, value);
+        }
+}
+
+[numthreads(400, 1, 1)]
 void GetMask (uint3 id : SV_DispatchThreadID)
 {
     uint w, h;
     Result.GetDimensions(w, h);
 
-    AddMask(mask, 150, w/2, h/2);
-    AddMask(mask, 150, w/2 + 150, h/2);
-    AddMask(mask, 150, w/2 - 150, h/2);
-    AddMask(mask, 150, w/2 - 150, h/2 + 150);
-    AddMask(mask, 150, w/2 - 150, h/2 - 150);
+    //AddMask(id.x, boardIndexes[id.x]);
+    //AddMask2();
+    AddMask(0, 0);
 
 }

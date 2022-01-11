@@ -10,39 +10,45 @@ public class AlphaConvert : MonoBehaviour
     int m_kernelIndex;
     ComputeBuffer m_outputBuffer;
 
-    public float[] alpha;
-
     public void Awake()
     {
 
         m_kernelIndex = m_computeShader.FindKernel("CSMain");
     }
 
-    public float[] ConvertToFloatArray(Texture2D renderTexture)
+    public float[] ConvertToFloatArray(List<MaskInfo> mask, int textureSize)
     {
-        m_computeShader.SetTexture(m_kernelIndex, INPUT_TEXTURE, renderTexture);
-        
-        float[] result = new float[renderTexture.width * renderTexture.height];
+        float[] result = new float[textureSize * textureSize * mask.Count];
         m_outputBuffer = new ComputeBuffer(result.Length, sizeof(float));
         m_outputBuffer.SetData(result);
         m_computeShader.SetBuffer(m_kernelIndex, OUTPUT_BUFFER, m_outputBuffer);
 
-        m_computeShader.Dispatch(m_kernelIndex, renderTexture.width / 30, renderTexture.height / 30, 1);
+        for(int i = 0; i < mask.Count; ++i)
+        {
+            m_computeShader.SetTexture(m_kernelIndex, INPUT_TEXTURE, mask[i].texture);
+            int index = i;
+            m_computeShader.SetInt("index", index);
+            m_computeShader.Dispatch(m_kernelIndex, mask[i].texture.width / 30, mask[i].texture.height / 30, 1);
+        }
 
         m_outputBuffer.GetData(result);
 
         return result;
     }
-    
-    
-    public void GetAplha(Texture2D renderTexture)
+
+    public float[] ConvertToFloatArray(Texture2D texture)
     {
-        alpha = new float[renderTexture.width * renderTexture.height];
-        Color[] color = renderTexture.GetPixels();
-        for(int i = 0; i < renderTexture.width; ++i) 
-            for(int j = 0; j < renderTexture.height; ++j)
-            {
-                alpha[i + j * renderTexture.width] = color[i + j * renderTexture.width].a;
-            }
+        float[] result = new float[texture.width * texture.height];
+        m_outputBuffer = new ComputeBuffer(result.Length, sizeof(float));
+        m_outputBuffer.SetData(result);
+        m_computeShader.SetBuffer(m_kernelIndex, OUTPUT_BUFFER, m_outputBuffer);
+
+        m_computeShader.SetTexture(m_kernelIndex, INPUT_TEXTURE, texture);
+        m_computeShader.SetInt("index", 0);
+        m_computeShader.Dispatch(m_kernelIndex, texture.width / 30, texture.height / 30, 1);
+
+        m_outputBuffer.GetData(result);
+
+        return result;
     }
 }

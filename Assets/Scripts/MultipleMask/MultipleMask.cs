@@ -7,27 +7,26 @@ public class MultipleMask : MonoBehaviour
     public Texture2D texture;
     public ComputeShader combineMaskShader;
     public AlphaConvert alphaConvert;
-    public MaskInfo mask;
+    public List<MaskInfo> maskes;
     public UITexture render;
-    public int boardSize = 10;
-    public int texResolution = 1080;
+    public int boardSize = 6;
+    public int texResolution;
     public string kernelName = "GetMask";
 
     RenderTexture outputTexture;
     private int kernelHandler;
-    JigsawMask[] jigsawMask;
-    ComputeBuffer buffer;
-    
-    public float[] alpha;
 
-    struct JigsawMask
-    {
-        public Color[] pixel;
-        public int id;
-    }
+    ComputeBuffer alphaBuffer;
+    ComputeBuffer boardIndexBuffer;
+
+    
+    float[] alpha;
+    int[] boardIndex;
+
 
     public void Start()
     {
+        texResolution = boardSize * 100;
         outputTexture = new RenderTexture(texResolution, texResolution, 0);
         outputTexture.enableRandomWrite = true;
         outputTexture.Create();
@@ -37,8 +36,13 @@ public class MultipleMask : MonoBehaviour
 
     private void InitData()
     {
-        alpha = alphaConvert.ConvertToFloatArray(mask.texture);
-        
+        //alpha = alphaConvert.ConvertToFloatArray(maskes, 150);
+        alpha = alphaConvert.ConvertToFloatArray(maskes[0].texture);
+        boardIndex = new int[maskes.Count];
+        for(int i = 0; i < maskes.Count; ++i)
+        {
+            boardIndex[i] = maskes[i].id;
+        }
     }
 
     private void InitShader()
@@ -47,12 +51,17 @@ public class MultipleMask : MonoBehaviour
 
         combineMaskShader.SetInt("texResolution", texResolution);
         combineMaskShader.SetInt("boardSize", boardSize);
-        buffer = new ComputeBuffer(alpha.Length, sizeof(float));
-        buffer.SetData(alpha);
-        combineMaskShader.SetBuffer(kernelHandler, "mask", buffer);
         
+        alphaBuffer = new ComputeBuffer(alpha.Length, sizeof(float));
+        alphaBuffer.SetData(alpha);
+        combineMaskShader.SetBuffer(kernelHandler, "alpha", alphaBuffer);
+
+        boardIndexBuffer = new ComputeBuffer(boardIndex.Length, sizeof(int));
+        boardIndexBuffer.SetData(boardIndex);
+        combineMaskShader.SetBuffer(kernelHandler, "boardIndexes", boardIndexBuffer);
+
         combineMaskShader.SetTexture(kernelHandler, "Result", outputTexture);
-        DispatchKernels(1);
+        DispatchKernels(maskes.Count);
         render.material.SetTexture("_Mask", outputTexture);
     }
 
@@ -63,12 +72,6 @@ public class MultipleMask : MonoBehaviour
         combineMaskShader.Dispatch(kernelHandler, count, 1, 1);
     }
 
-
-    [MyBox.ButtonMethod]
-    public void SetAlpha()
-    {
-        alphaConvert.GetAplha(mask.texture);
-    }
 }
 
 [System.Serializable]

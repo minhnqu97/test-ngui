@@ -4,6 +4,7 @@
 // with cs.SetTexture
 Texture2D<float4> InputTexture;
 RWBuffer<float> OutputBuffer;
+int index;
 
 [numthreads(30, 30, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
@@ -11,5 +12,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     uint w, h;
     InputTexture.GetDimensions(w, h);
 
-    OutputBuffer[id.x + id.y * w] = InputTexture[id.xy].a;
+    OutputBuffer[index * w * h + id.x + id.y * w] = InputTexture[id.xy].a;
 }
