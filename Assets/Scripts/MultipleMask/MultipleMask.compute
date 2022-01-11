@@ -1,0 +1,46 @@
+﻿
+#pragma kernel GetMask
+
+
+RWTexture2D<float4> Result;
+int texResolution;
+int boardSize;
+
+RWBuffer<float> mask;
+
+
+//[numthreads(8,8,1)]
+//void CSMain (uint3 id : SV_DispatchThreadID)
+//{
+//     TODO: insert actual code here!
+
+//    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+//}
+
+void AddMask(RWBuffer<float> _mask, int maskSize, int x, int y)
+{
+    int startX = x - maskSize / 2;
+    int startY = y - maskSize / 2;
+
+    for(int i = 0; i < maskSize; ++i)
+        for(int j = 0; j < maskSize; ++j)
+        {
+            float value = Result[uint2(startX + i, startY + j)].a + _mask[i + j * maskSize];
+            Result[uint2(startX + i, startY + j)] = float4(1, 1, 1, value);
+        }
+}
+
+
+[numthreads(1, 1, 1)]
+void GetMask (uint3 id : SV_DispatchThreadID)
+{
+    uint w, h;
+    Result.GetDimensions(w, h);
+
+    AddMask(mask, 150, w/2, h/2);
+    AddMask(mask, 150, w/2 + 150, h/2);
+    AddMask(mask, 150, w/2 - 150, h/2);
+    AddMask(mask, 150, w/2 - 150, h/2 + 150);
+    AddMask(mask, 150, w/2 - 150, h/2 - 150);
+
+}

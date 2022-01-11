@@ -1,0 +1,15 @@
+﻿#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+Texture2D<float4> InputTexture;
+RWBuffer<float> OutputBuffer;
+
+[numthreads(30, 30, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint w, h;
+    InputTexture.GetDimensions(w, h);
+
+    OutputBuffer[id.x + id.y * w] = InputTexture[id.xy].a;
+}
